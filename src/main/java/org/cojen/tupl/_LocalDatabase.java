@@ -39,6 +39,8 @@ import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
+import java.nio.charset.StandardCharsets;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,8 +68,6 @@ import org.cojen.tupl.io.FileFactory;
 import org.cojen.tupl.io.MappedPageArray;
 import org.cojen.tupl.io.OpenOption;
 import org.cojen.tupl.io.PageArray;
-
-import org.cojen.tupl.util.Latch;
 
 import static org.cojen.tupl._Node.*;
 import static org.cojen.tupl.DirectPageOps.*;
@@ -178,7 +178,7 @@ final class _LocalDatabase extends AbstractDatabase {
     // Various mappings, defined by KEY_TYPE_ fields.
     private final _Tree mRegistryKeyMap;
 
-    private final Latch mOpenTreesLatch;
+    private final AltLatch mOpenTreesLatch;
     // Maps tree names to open trees.
     // Must be a concurrent map because we rely on concurrent iteration.
     private final Map<byte[], _TreeRef> mOpenTrees;
@@ -189,7 +189,7 @@ final class _LocalDatabase extends AbstractDatabase {
 
     // Map of all loaded nodes.
     private final _Node[] mNodeMapTable;
-    private final Latch[] mNodeMapLatches;
+    private final AltLatch[] mNodeMapLatches;
 
     final int mMaxKeySize;
     final int mMaxEntrySize;
@@ -218,8 +218,8 @@ final class _LocalDatabase extends AbstractDatabase {
     final boolean mFullyMapped;
     /*P*/ // ]
 
-    volatile boolean mClosed;
-    volatile Throwable mClosedCause;
+    private volatile boolean mClosed;
+    private volatile Throwable mClosedCause;
 
     private static final AtomicReferenceFieldUpdater<_LocalDatabase, Throwable>
         cClosedCauseUpdater = AtomicReferenceFieldUpdater.newUpdater
@@ -336,9 +336,9 @@ final class _LocalDatabase extends AbstractDatabase {
                 capacity = 0x40000000;
             }
             mNodeMapTable = new _Node[capacity];
-            mNodeMapLatches = new Latch[latches];
+            mNodeMapLatches = new AltLatch[latches];
             for (int i=0; i<latches; i++) {
-                mNodeMapLatches[i] = new Latch();
+                mNodeMapLatches[i] = new AltLatch();
             }
         }
 
@@ -453,7 +453,8 @@ final class _LocalDatabase extends AbstractDatabase {
                 }
 
                 BufferedWriter w = new BufferedWriter
-                    (new OutputStreamWriter(new FileOutputStream(infoFile), "UTF-8"));
+                    (new OutputStreamWriter(new FileOutputStream(infoFile),
+                                            StandardCharsets.UTF_8));
 
                 try {
                     config.writeInfo(w);
@@ -496,6 +497,10 @@ final class _LocalDatabase extends AbstractDatabase {
                     }
                 }
 
+                // Magic constant was determined emperically against the G1 collector. A higher
+                // constant increases memory thrashing.
+                long usedRate = Utils.roundUpPower2((long) Math.ceil(maxCache / 32768)) - 1;
+
                 int stripes = roundUpPower2(procCount * 4);
 
                 int stripeSize;
@@ -510,14 +515,14 @@ final class _LocalDatabase extends AbstractDatabase {
                 int rem = maxCache % stripes;
 
                 usageLists = new _NodeUsageList[stripes];
-  
+
                 for (int i=0; i<stripes; i++) {
                     int size = stripeSize;
                     if (rem > 0) {
                         size++;
                         rem--;
                     }
-                    usageLists[i] = new _NodeUsageList(this, size);
+                    usageLists[i] = new _NodeUsageList(this, usedRate, size);
                 }
 
                 stripeSize = minCache / stripes;
@@ -551,7 +556,7 @@ final class _LocalDatabase extends AbstractDatabase {
 
             mTxnContexts = new _TransactionContext[procCount * 4];
             for (int i=0; i<mTxnContexts.length; i++) {
-                mTxnContexts[i] = new _TransactionContext(procCount);
+                mTxnContexts[i] = new _TransactionContext(mTxnContexts.length);
             };
 
             mSparePagePool = new _PagePool(mPageSize, procCount);
@@ -576,7 +581,7 @@ final class _LocalDatabase extends AbstractDatabase {
                 mRegistry = new _Tree(this, _Tree.REGISTRY_ID, null, rootNode);
             }
 
-            mOpenTreesLatch = new Latch();
+            mOpenTreesLatch = new AltLatch();
             if (openMode == OPEN_TEMP) {
                 mOpenTrees = Collections.emptyMap();
                 mOpenTreesById = new LHashTable.Obj<>(0);
@@ -608,8 +613,14 @@ final class _LocalDatabase extends AbstractDatabase {
                 }
             }
 
-            // Key size is limited to ensure that internal nodes can hold at least two keys.
-            // Absolute maximum is dictated by key encoding, as described in _Node class.
+            // Key size is limited to ensure that internal nodes and leaf nodes can hold at
+            // least two keys. All nodes have a 12-byte header, large keys have a 2-byte
+            // header, and each node entry has a 2-byte pointer to it. Internal nodes have an
+            // 8-byte field for each child pointer, and leaf nodes require at least 11 bytes to
+            // hold a fragmented value. The magic constant for internal nodes is (12 + 2 + 2 +
+            // 2 + 2 + 8 * 3) = 44, and half that is 22. Leaf node constant is (12 + 2 + 2 + 2
+            // + 2 + 11 * 2) = 42, and half that is 21. The internal node constant is more
+            // restrictive, and so that's what's used.
             mMaxKeySize = Math.min(16383, (pageSize >> 1) - 22);
 
             // Limit maximum non-fragmented entry size to 0.75 of usable node size.
@@ -834,20 +845,13 @@ final class _LocalDatabase extends AbstractDatabase {
         }
     }
 
-    static class ShutdownPrimer implements ShutdownHook {
-        private final WeakReference<_LocalDatabase> mDatabaseRef;
-
+    static class ShutdownPrimer extends ShutdownHook.Weak<_LocalDatabase> {
         ShutdownPrimer(_LocalDatabase db) {
-            mDatabaseRef = new WeakReference<>(db);
+            super(db);
         }
 
         @Override
-        public void shutdown() {
-            _LocalDatabase db = mDatabaseRef.get();
-            if (db == null) {
-                return;
-            }
-
+        void doShutdown(_LocalDatabase db) {
             File primer = db.primerFile();
 
             FileOutputStream fout;
@@ -1142,13 +1146,23 @@ final class _LocalDatabase extends AbstractDatabase {
 
     /**
      * Called by _Tree.drop with root node latch held exclusively.
+     *
+     * @param shared commit lock held shared; always released by this method
      */
-    Runnable deleteTree(_Tree tree) throws IOException {
-        _Node root;
-        if ((!(tree instanceof _TempTree) && !moveToTrash(tree.mId, tree.mIdBytes))
-            || (root = tree.close(true, true)) == null)
-        {
-            // Handle concurrent delete attempt.
+    Runnable deleteTree(_Tree tree, CommitLock.Shared shared) throws IOException {
+        try {
+            if (!(tree instanceof _TempTree) && !moveToTrash(tree.mId, tree.mIdBytes)) {
+                // Handle concurrent delete attempt.
+                throw new ClosedIndexException();
+            }
+        } finally {
+            // Always release before calling close, which might require an exclusive lock.
+            shared.release();
+        }
+
+        _Node root = tree.close(true, true);
+        if (root == null) {
+            // Handle concurrent close attempt.
             throw new ClosedIndexException();
         }
 
@@ -1293,7 +1307,7 @@ final class _LocalDatabase extends AbstractDatabase {
 
                 mTrashed = null;
             } catch (IOException e) {
-                if ((!mClosed || mClosedCause != null) && mListener != null) {
+                if (!isClosed() && mListener != null) {
                     mListener.notify
                         (EventType.DELETION_FAILED,
                          "Index deletion failed: %1$d, name: %2$s, exception: %3$s",
@@ -1307,7 +1321,7 @@ final class _LocalDatabase extends AbstractDatabase {
                 try {
                     mTrashed = openNextTrashedTree(idBytes);
                 } catch (IOException e) {
-                    if ((!mClosed || mClosedCause != null) && mListener != null) {
+                    if (!isClosed() && mListener != null) {
                         mListener.notify
                             (EventType.DELETION_FAILED,
                              "Unable to resume deletion: %1$s", rootCause(e));
@@ -1467,7 +1481,7 @@ final class _LocalDatabase extends AbstractDatabase {
 
     @Override
     public long preallocate(long bytes) throws IOException {
-        if (!mClosed && mPageDb.isDurable()) {
+        if (!isClosed() && mPageDb.isDurable()) {
             int pageSize = mPageSize;
             long pageCount = (bytes + pageSize - 1) / pageSize;
             if (pageCount > 0) {
@@ -1683,21 +1697,21 @@ final class _LocalDatabase extends AbstractDatabase {
 
     @Override
     public void flush() throws IOException {
-        if (!mClosed && mRedoWriter != null) {
+        if (!isClosed() && mRedoWriter != null) {
             mRedoWriter.flush();
         }
     }
 
     @Override
     public void sync() throws IOException {
-        if (!mClosed && mRedoWriter != null) {
+        if (!isClosed() && mRedoWriter != null) {
             mRedoWriter.flushSync(false);
         }
     }
 
     @Override
     public void checkpoint() throws IOException {
-        if (!mClosed && mPageDb.isDurable()) {
+        if (!isClosed() && mPageDb.isDurable()) {
             try {
                 checkpoint(false, 0, 0);
             } catch (Throwable e) {
@@ -2089,8 +2103,12 @@ final class _LocalDatabase extends AbstractDatabase {
         }
     }
 
+    boolean isClosed() {
+        return mClosed || mClosedCause != null;
+    }
+
     void checkClosed() throws DatabaseException {
-        if (mClosed) {
+        if (isClosed()) {
             String message = "Closed";
             Throwable cause = mClosedCause;
             if (cause != null) {
@@ -2098,6 +2116,10 @@ final class _LocalDatabase extends AbstractDatabase {
             }
             throw new DatabaseException(message, cause);
         }
+    }
+
+    Throwable closedCause() {
+        return mClosedCause;
     }
 
     void treeClosed(_Tree tree) {
@@ -2191,6 +2213,11 @@ final class _LocalDatabase extends AbstractDatabase {
         try {
             if (root != null) {
                 root.acquireExclusive();
+                if (root.mPage == p_closedTreePage()) {
+                    // Database has been closed.
+                    root.releaseExclusive();
+                    return;
+                }
                 deleteNode(root);
             }
             mRegistryKeyMap.delete(Transaction.BOGUS, trashIdKey);
@@ -2641,7 +2668,7 @@ final class _LocalDatabase extends AbstractDatabase {
                 }
             }
         } catch (Exception e) {
-            if (!mClosed) {
+            if (!isClosed()) {
                 throw e;
             }
         }
@@ -2736,8 +2763,8 @@ final class _LocalDatabase extends AbstractDatabase {
 
         // Again with shared partition latch held.
 
-        final Latch[] latches = mNodeMapLatches;
-        final Latch latch = latches[hash & (latches.length - 1)];
+        final AltLatch[] latches = mNodeMapLatches;
+        final AltLatch latch = latches[hash & (latches.length - 1)];
         latch.acquireShared();
 
         node = table[hash & (table.length - 1)];
@@ -2764,8 +2791,8 @@ final class _LocalDatabase extends AbstractDatabase {
      * Put a node into the map, but caller must confirm that node is not already present.
      */
     void nodeMapPut(final _Node node, final int hash) {
-        final Latch[] latches = mNodeMapLatches;
-        final Latch latch = latches[hash & (latches.length - 1)];
+        final AltLatch[] latches = mNodeMapLatches;
+        final AltLatch latch = latches[hash & (latches.length - 1)];
         latch.acquireExclusive();
 
         final _Node[] table = mNodeMapTable;
@@ -2797,8 +2824,8 @@ final class _LocalDatabase extends AbstractDatabase {
      */
     _Node nodeMapPutIfAbsent(final _Node node) {
         final int hash = Long.hashCode(node.mId);
-        final Latch[] latches = mNodeMapLatches;
-        final Latch latch = latches[hash & (latches.length - 1)];
+        final AltLatch[] latches = mNodeMapLatches;
+        final AltLatch latch = latches[hash & (latches.length - 1)];
         latch.acquireExclusive();
 
         final _Node[] table = mNodeMapTable;
@@ -2824,8 +2851,8 @@ final class _LocalDatabase extends AbstractDatabase {
      */
     void nodeMapReplace(final _Node oldNode, final _Node newNode) {
         final int hash = Long.hashCode(oldNode.mId);
-        final Latch[] latches = mNodeMapLatches;
-        final Latch latch = latches[hash & (latches.length - 1)];
+        final AltLatch[] latches = mNodeMapLatches;
+        final AltLatch latch = latches[hash & (latches.length - 1)];
         latch.acquireExclusive();
 
         newNode.mNodeMapNext = oldNode.mNodeMapNext;
@@ -2854,8 +2881,8 @@ final class _LocalDatabase extends AbstractDatabase {
     }
 
     void nodeMapRemove(final _Node node, final int hash) {
-        final Latch[] latches = mNodeMapLatches;
-        final Latch latch = latches[hash & (latches.length - 1)];
+        final AltLatch[] latches = mNodeMapLatches;
+        final AltLatch latch = latches[hash & (latches.length - 1)];
         latch.acquireExclusive();
 
         final _Node[] table = mNodeMapTable;
@@ -2888,7 +2915,7 @@ final class _LocalDatabase extends AbstractDatabase {
         if (node != null) {
             node.acquireShared();
             if (nodeId == node.mId) {
-                node.used();
+                node.used(ThreadLocalRandom.current());
                 return node;
             }
             node.releaseShared();
@@ -2959,7 +2986,7 @@ final class _LocalDatabase extends AbstractDatabase {
         if (node != null) {
             node.acquireExclusive();
             if (nodeId == node.mId) {
-                node.used();
+                node.used(ThreadLocalRandom.current());
                 return node;
             }
             node.releaseExclusive();
@@ -3022,7 +3049,7 @@ final class _LocalDatabase extends AbstractDatabase {
      */
     void nodeMapDeleteAll() {
         start: while (true) {
-            for (Latch latch : mNodeMapLatches) {
+            for (AltLatch latch : mNodeMapLatches) {
                 latch.acquireExclusive();
             }
 
@@ -3048,7 +3075,7 @@ final class _LocalDatabase extends AbstractDatabase {
                     }
                 }
             } finally {
-                for (Latch latch : mNodeMapLatches) {
+                for (AltLatch latch : mNodeMapLatches) {
                     latch.releaseExclusive();
                 }
             }
@@ -3156,6 +3183,13 @@ final class _LocalDatabase extends AbstractDatabase {
         // node.type(TYPE_FRAGMENT);
         /*P*/ // ]
         return node;
+    }
+
+    /**
+     * Caller must hold commit lock and any latch on node.
+     */
+    boolean isMutable(_Node node) {
+        return node.mCachedState == mCommitState && node.mId > 1;
     }
 
     /**
@@ -4162,7 +4196,7 @@ final class _LocalDatabase extends AbstractDatabase {
         // Checkpoint lock ensures consistent state between page store and logs.
         mCheckpointLock.lock();
         try {
-            if (mClosed) {
+            if (isClosed()) {
                 return;
             }
 
@@ -4285,9 +4319,7 @@ final class _LocalDatabase extends AbstractDatabase {
                 p_longPutLE(header, hoff + I_CHECKPOINT_NUMBER, redoNum);
                 p_longPutLE(header, hoff + I_REDO_TXN_ID, redoTxnId);
                 p_longPutLE(header, hoff + I_REDO_POSITION, redoPos);
-
-                p_longPutLE(header, hoff + I_REPL_ENCODING,
-                            mRedoWriter == null ? 0 : mRedoWriter.encoding());
+                p_longPutLE(header, hoff + I_REPL_ENCODING, redo == null ? 0 : redo.encoding());
 
                 // TODO: I don't like all this activity with exclusive commit
                 // lock held. _UndoLog can be refactored to store into a special
@@ -4366,7 +4398,7 @@ final class _LocalDatabase extends AbstractDatabase {
                 // the next checkpoint.
                 CommitLock.Shared shared = mCommitLock.acquireShared();
                 try {
-                    if (!mClosed) {
+                    if (!isClosed()) {
                         shared = masterUndoLog.doTruncate(mCommitLock, shared, false);
                     }
                 } finally {

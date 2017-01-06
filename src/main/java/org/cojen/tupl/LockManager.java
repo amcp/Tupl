@@ -19,9 +19,6 @@ package org.cojen.tupl;
 import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 
-import org.cojen.tupl.util.Latch;
-import org.cojen.tupl.util.LatchCondition;
-
 import static org.cojen.tupl.LockResult.*;
 
 /**
@@ -35,7 +32,7 @@ final class LockManager {
     // into Lock.mLockCount field, which is why the numbers seem a bit weird.
     static final int TYPE_SHARED = 1, TYPE_UPGRADABLE = 0x80000000, TYPE_EXCLUSIVE = ~0;
 
-    private final WeakReference<Database> mDatabaseRef;
+    final WeakReference<LocalDatabase> mDatabaseRef;
 
     final LockUpgradeRule mDefaultLockUpgradeRule;
     final long mDefaultTimeoutNanos;
@@ -48,11 +45,11 @@ final class LockManager {
     /**
      * @param db optional; used by DeadlockDetector to resolve index names
      */
-    LockManager(Database db, LockUpgradeRule lockUpgradeRule, long timeoutNanos) {
+    LockManager(LocalDatabase db, LockUpgradeRule lockUpgradeRule, long timeoutNanos) {
         this(db, lockUpgradeRule, timeoutNanos, Runtime.getRuntime().availableProcessors() * 16);
     }
 
-    private LockManager(Database db, LockUpgradeRule lockUpgradeRule, long timeoutNanos,
+    private LockManager(LocalDatabase db, LockUpgradeRule lockUpgradeRule, long timeoutNanos,
                         int numHashTables)
     {
         mDatabaseRef = db == null ? null : new WeakReference<>(db);
@@ -75,7 +72,7 @@ final class LockManager {
 
     final Index indexById(long id) {
         if (mDatabaseRef != null) {
-            Database db = mDatabaseRef.get();
+            LocalDatabase db = mDatabaseRef.get();
             if (db != null) {
                 try {
                     return db.indexById(id);
@@ -128,11 +125,10 @@ final class LockManager {
         LockHT ht = getLockHT(lock.mHashCode);
         ht.acquireExclusive();
         try {
-            if (lock.unlock(locker, ht)) {
-                ht.remove(lock);
-            }
-        } finally {
+            lock.unlock(locker, ht);
+        } catch (Throwable e) {
             ht.releaseExclusive();
+            throw e;
         }
     }
 
@@ -141,8 +137,9 @@ final class LockManager {
         ht.acquireExclusive();
         try {
             lock.unlockToShared(locker, ht);
-        } finally {
+        } catch (Throwable e) {
             ht.releaseExclusive();
+            throw e;
         }
     }
 
@@ -151,8 +148,9 @@ final class LockManager {
         ht.acquireExclusive();
         try {
             lock.unlockToUpgradable(locker, ht);
-        } finally {
+        } catch (Throwable e) {
             ht.releaseExclusive();
+            throw e;
         }
     }
 
@@ -161,20 +159,23 @@ final class LockManager {
         ht.acquireExclusive();
         try {
             return lock.transferExclusive(locker, ht, pending);
-        } finally {
+        } catch (Throwable e) {
             ht.releaseExclusive();
+            throw e;
         }
     }
 
     /**
      * Mark a lock as referencing a ghosted entry. Caller must ensure that lock
      * is already exclusively held.
+     *
+     * @param frame must be bound to the ghost position
      */
-    final void ghosted(Tree tree, byte[] key, int hash) {
+    final void ghosted(long indexId, byte[] key, int hash, CursorFrame.Ghost frame) {
         LockHT ht = getLockHT(hash);
         ht.acquireExclusive();
         try {
-            ht.lockFor(tree.mId, key, hash).mSharedLockOwnersObj = tree;
+            ht.lockFor(indexId, key, hash).mSharedLockOwnersObj = frame;
         } finally {
             ht.releaseExclusive();
         }
@@ -234,7 +235,7 @@ final class LockManager {
      * Simple hashtable of Locks.
      */
     @SuppressWarnings("serial")
-    static final class LockHT extends Latch {
+    static final class LockHT extends AltLatch {
         private static final float LOAD_FACTOR = 0.75f;
 
         private transient Lock[] mEntries;
@@ -483,7 +484,7 @@ final class LockManager {
 
                             // Interrupt all waiters.
 
-                            LatchCondition q = e.mQueueU;
+                            AltLatchCondition q = e.mQueueU;
                             if (q != null) {
                                 q.clear();
                                 e.mQueueU = null;

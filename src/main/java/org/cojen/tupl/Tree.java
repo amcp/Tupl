@@ -25,6 +25,10 @@ import java.util.Comparator;
 
 import static java.util.Spliterator.*;
 
+import java.nio.charset.StandardCharsets;
+
+import java.util.concurrent.ThreadLocalRandom;
+
 import static org.cojen.tupl.PageOps.*;
 import static org.cojen.tupl.Utils.*;
 
@@ -117,11 +121,7 @@ class Tree implements View, Index {
         if (name == null) {
             return null;
         }
-        try {
-            return new String(name, "UTF-8");
-        } catch (IOException e) {
-            return new String(name);
-        }
+        return new String(name, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -177,6 +177,8 @@ class Tree implements View, Index {
         // before releasing the root latch. Also, Node.used is not invoked for the root node,
         // because it cannot be evicted.
 
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
         while (!node.isLeaf()) {
             int childPos;
             try {
@@ -199,7 +201,7 @@ class Tree implements View, Index {
                     if (node.mSplit != null) {
                         node = node.mSplit.selectNode(node, key);
                     }
-                    node.used();
+                    node.used(rnd);
                     continue;
                 }
 
@@ -783,29 +785,44 @@ class Tree implements View, Index {
      * @return delete task
      */
     final Runnable drop(boolean mustBeEmpty) throws IOException {
-        Node root = mRoot;
-        root.acquireExclusive();
+        // Acquire early to avoid deadlock when moving tree to trash.
+        CommitLock.Shared shared = mDatabase.commitLock().acquireShared();
+
+        Node root;
         try {
-            if (root.mPage == p_closedTreePage()) {
-                throw new ClosedIndexException();
+            root = mRoot;
+            root.acquireExclusive();
+        } catch (Throwable e) {
+            shared.release();
+            throw e;
+        }
+
+        try {
+            try {
+                if (root.mPage == p_closedTreePage()) {
+                    throw new ClosedIndexException();
+                }
+
+                if (mustBeEmpty && (!root.isLeaf() || root.hasKeys())) {
+                    // Note that this check also covers the transactional case, because deletes
+                    // store ghosts. The message could be more accurate, but it would require
+                    // scanning the whole index looking for ghosts. Using LockMode.UNSAFE
+                    // deletes it's possible to subvert the transactional case, allowing the
+                    // drop to proceed. The rollback logic in UndoLog accounts for this,
+                    // ignoring undo operations for missing indexes. Preventing the drop in
+                    // this case isn't worth the trouble, because UNSAFE is what it is.
+                    throw new IllegalStateException("Cannot drop a non-empty index");
+                }
+
+                if (isInternal(mId)) {
+                    throw new IllegalStateException("Cannot close an internal index");
+                }
+            } catch (Throwable e) {
+                shared.release();
+                throw e;
             }
 
-            if (mustBeEmpty && (!root.isLeaf() || root.hasKeys())) {
-                // Note that this check also covers the transactional case, because deletes
-                // store ghosts. The message could be more accurate, but it would require
-                // scanning the whole index looking for ghosts. Using LockMode.UNSAFE deletes
-                // it's possible to subvert the transactional case, allowing the drop to
-                // proceed. The rollback logic in UndoLog accounts for this, ignoring undo
-                // operations for missing indexes. Preventing the drop in this case isn't worth
-                // the trouble, because UNSAFE is what it is.
-                throw new IllegalStateException("Cannot drop a non-empty index");
-            }
-
-            if (isInternal(mId)) {
-                throw new IllegalStateException("Cannot close an internal index");
-            }
-
-            return mDatabase.deleteTree(this);
+            return mDatabase.deleteTree(this, shared);
         } finally {
             root.releaseExclusive();
         }
