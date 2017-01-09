@@ -640,6 +640,42 @@ public interface View {
     }
 
     /**
+     * Returns a view consisting of entries that exist this view and all the others that are
+     * given. An intersection only selects duplicate keys, relying on a combiner to decide how
+     * to deal with them. If the set of views in the intersection don't follow a consistent
+     * ordering, then selection of duplicates doesn't work correctly. The actual behavior is
+     * undefined.
+     *
+     * <p>Storing entries in the intersection is permitted, by storing into all the views. The
+     * order in which the underlying operations are performed permits a intersection to be
+     * composed of views which can map to the same underlying source index. The entire
+     * operation is transactional, and so stores to intersections don't support the {@link
+     * Transaction#BOGUS "bogus"} transaction.
+     *
+     * <p>Intersections don't support cursors. For this reason, intersections are typically
+     * applied last when building a view processing pipeline. Also, avoiding creating
+     * intersections which are composed of other intersections. Such a pipeline might be less
+     * efficient than one composed with a single intersection step.
+     *
+     * @param combiner combines values together; pass null to always favor the first
+     */
+    public default View viewIntersection(Combiner combiner, View... others) {
+        if (others.length == 0) {
+            return this;
+        }
+        if (combiner == null) {
+            combiner = Combiner.first();
+        }
+        View[] sources = new View[1 + others.length];
+        sources[0] = this;
+        System.arraycopy(others, 0, sources, 1, others.length);
+        // FIXME: Implement. Also consider stores to the same underlying view. Read existing
+        // value first and store only if it's different.
+        throw null;
+        //return new IntersectionView(combiner, sources);
+    }
+
+    /**
      * Returns a view, backed by this one, whose natural order is reversed.
      */
     public default View viewReverse() {
