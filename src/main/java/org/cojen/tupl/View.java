@@ -626,6 +626,9 @@ public interface View {
      *
      * @param combiner combines values together; pass null to always favor the first
      */
+    // FIXME: Storing into the union is very odd, especially considering that the combiner can
+    // do anything. Only support delete, but only if the key is in the union result set. --
+    // then delete the key from all sources.
     public default View viewUnion(Combiner combiner, View... others) {
         if (others.length == 0) {
             return this;
@@ -659,6 +662,9 @@ public interface View {
      *
      * @param combiner combines values together; pass null to always favor the first
      */
+    // FIXME: Storing into the intersection is very odd, especially considering that the
+    // combiner can do anything. Only support delete, but only if the key is in the
+    // intersection result set. -- then delete the key from all sources.
     public default View viewIntersection(Combiner combiner, View... others) {
         if (others.length == 0) {
             return this;
@@ -692,6 +698,8 @@ public interface View {
      * are composed of other differences. Such a pipeline might be less efficient than one
      * composed with a single difference step.
      */
+    // FIXME: Consider that all stores apply just to the first view, but only when necessary to
+    // change the observed outcome.
     public default View viewDifference(View... others) {
         if (others.length == 0) {
             return this;
