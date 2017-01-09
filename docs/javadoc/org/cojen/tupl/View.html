@@ -373,7 +373,8 @@ var activeTableTab = "activeTableTab";
 </tr>
 <tr id="i34" class="altColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
-<td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewUnion-org.cojen.tupl.View...-">viewUnion</a></span>(<a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewUnion-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">viewUnion</a></span>(<a href="../../../org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a>&nbsp;combiner,
+         <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
 <div class="block">Returns a view which combines the entries of this view, with the others that are given.</div>
 </td>
 </tr>
@@ -1133,16 +1134,17 @@ var activeTableTab = "activeTableTab";
 </dl>
 </li>
 </ul>
-<a name="viewUnion-org.cojen.tupl.View...-">
+<a name="viewUnion-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">
 <!--   -->
 </a>
 <ul class="blockList">
 <li class="blockList">
 <h4>viewUnion</h4>
-<pre>default&nbsp;<a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>&nbsp;viewUnion(<a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</pre>
+<pre>default&nbsp;<a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>&nbsp;viewUnion(<a href="../../../org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a>&nbsp;combiner,
+                       <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</pre>
 <div class="block">Returns a view which combines the entries of this view, with the others that are given.
- A union eliminates duplicate keys, favoring those encountered in first in the set of
- views. If the set of views in the union don't follow a consistent ordering, then
+ A union eliminates duplicate keys, relying on a combiner to decide how to deal with
+ them. If the set of views in the union don't follow a consistent ordering, then
  elimination of duplicates doesn't work correctly. The actual behavior is undefined.
 
  <p>Storing entries in the union is permitted, but final entries are only stored in the
@@ -1156,6 +1158,10 @@ var activeTableTab = "activeTableTab";
  building a view processing pipeline. Also, avoiding creating unions which are composed
  of other unions. Such a pipeline might be less efficient than one composed with a single
  union step.</div>
+<dl>
+<dt><span class="paramLabel">Parameters:</span></dt>
+<dd><code>combiner</code> - combines values together; pass null to always favor the first</dd>
+</dl>
 </li>
 </ul>
 <a name="viewReverse--">

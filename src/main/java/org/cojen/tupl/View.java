@@ -608,8 +608,8 @@ public interface View {
 
     /**
      * Returns a view which combines the entries of this view, with the others that are given.
-     * A union eliminates duplicate keys, favoring those encountered in first in the set of
-     * views. If the set of views in the union don't follow a consistent ordering, then
+     * A union eliminates duplicate keys, relying on a combiner to decide how to deal with
+     * them. If the set of views in the union don't follow a consistent ordering, then
      * elimination of duplicates doesn't work correctly. The actual behavior is undefined.
      *
      * <p>Storing entries in the union is permitted, but final entries are only stored in the
@@ -623,15 +623,20 @@ public interface View {
      * building a view processing pipeline. Also, avoiding creating unions which are composed
      * of other unions. Such a pipeline might be less efficient than one composed with a single
      * union step.
+     *
+     * @param combiner combines values together; pass null to always favor the first
      */
-    public default View viewUnion(View... others) {
+    public default View viewUnion(Combiner combiner, View... others) {
         if (others.length == 0) {
             return this;
+        }
+        if (combiner == null) {
+            combiner = Combiner.first();
         }
         View[] sources = new View[1 + others.length];
         sources[0] = this;
         System.arraycopy(others, 0, sources, 1, others.length);
-        return new UnionView(sources);
+        return new UnionView(combiner, sources);
     }
 
     /**

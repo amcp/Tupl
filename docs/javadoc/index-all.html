@@ -361,6 +361,14 @@
 <dd>
 <div class="block">Closes a resource without throwing another exception.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="org/cojen/tupl/Combiner.html#combine-byte:A-byte:A-byte:A-">combine(byte[], byte[], byte[])</a></span> - Method in interface org.cojen.tupl.<a href="org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a></dt>
+<dd>
+<div class="block">Return a combined value derived from the given key and value pair.</div>
+</dd>
+<dt><a href="org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl"><span class="typeNameLink">Combiner</span></a> - Interface in <a href="org/cojen/tupl/package-summary.html">org.cojen.tupl</a></dt>
+<dd>
+<div class="block">Represents an operation which combines two values which map to the same key.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="org/cojen/tupl/Cursor.html#commit-byte:A-">commit(byte[])</a></span> - Method in interface org.cojen.tupl.<a href="org/cojen/tupl/Cursor.html" title="interface in org.cojen.tupl">Cursor</a></dt>
 <dd>
 <div class="block">Combined store and commit to the linked transaction.</div>
@@ -1001,6 +1009,10 @@
 <div class="block">Optimized version of the regular find method, which can perform fewer search steps if
  the given key is in close proximity to the current one.</div>
 </dd>
+<dt><span class="memberNameLink"><a href="org/cojen/tupl/Combiner.html#first--">first()</a></span> - Static method in interface org.cojen.tupl.<a href="org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a></dt>
+<dd>
+<div class="block">Returns a Combiner that chooses the first value and discards the second value.</div>
+</dd>
 <dt><span class="memberNameLink"><a href="org/cojen/tupl/Cursor.html#first--">first()</a></span> - Method in interface org.cojen.tupl.<a href="org/cojen/tupl/Cursor.html" title="interface in org.cojen.tupl">Cursor</a></dt>
 <dd>
 <div class="block">Moves the Cursor to find the first available entry.</div>
@@ -1624,6 +1636,10 @@
 </a>
 <h2 class="title">N</h2>
 <dl>
+<dt><span class="memberNameLink"><a href="org/cojen/tupl/Combiner.html#neither--">neither()</a></span> - Static method in interface org.cojen.tupl.<a href="org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a></dt>
+<dd>
+<div class="block">Returns a Combiner that discards both values (always returns null).</div>
+</dd>
 <dt><span class="memberNameLink"><a href="org/cojen/tupl/Transaction.html#nestingLevel--">nestingLevel()</a></span> - Method in interface org.cojen.tupl.<a href="org/cojen/tupl/Transaction.html" title="interface in org.cojen.tupl">Transaction</a></dt>
 <dd>
 <div class="block">Counts the current transaction scope nesting level.</div>
@@ -2070,6 +2086,10 @@
 <dt><a href="org/cojen/tupl/Scanner.html" title="interface in org.cojen.tupl"><span class="typeNameLink">Scanner</span></a> - Interface in <a href="org/cojen/tupl/package-summary.html">org.cojen.tupl</a></dt>
 <dd>
 <div class="block">Scans through all entries in a view, similar to a <a href="http://docs.oracle.com/javase/8/docs/api/java/util/Spliterator.html?is-external=true" title="class or interface in java.util"><code>Spliterator</code></a>.</div>
+</dd>
+<dt><span class="memberNameLink"><a href="org/cojen/tupl/Combiner.html#second--">second()</a></span> - Static method in interface org.cojen.tupl.<a href="org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a></dt>
+<dd>
+<div class="block">Returns a Combiner that chooses the second value and discards the first value.</div>
 </dd>
 <dt><span class="memberNameLink"><a href="org/cojen/tupl/DatabaseConfig.html#secondaryCacheSize-long-">secondaryCacheSize(long)</a></span> - Method in class org.cojen.tupl.<a href="org/cojen/tupl/DatabaseConfig.html" title="class in org.cojen.tupl">DatabaseConfig</a></dt>
 <dd>
@@ -2647,7 +2667,7 @@ the order they are declared.</div>
 <div class="block">Returns a sub-view, backed by this one, whose entries have been filtered out and
  transformed.</div>
 </dd>
-<dt><span class="memberNameLink"><a href="org/cojen/tupl/View.html#viewUnion-org.cojen.tupl.View...-">viewUnion(View...)</a></span> - Method in interface org.cojen.tupl.<a href="org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></dt>
+<dt><span class="memberNameLink"><a href="org/cojen/tupl/View.html#viewUnion-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">viewUnion(Combiner, View...)</a></span> - Method in interface org.cojen.tupl.<a href="org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></dt>
 <dd>
 <div class="block">Returns a view which combines the entries of this view, with the others that are given.</div>
 </dd>

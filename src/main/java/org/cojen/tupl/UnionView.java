@@ -29,6 +29,7 @@ import java.util.function.Function;
  * @author Brian S O'Neill
  */
 class UnionView implements View {
+    private final Combiner mCombiner;
     private final Ordering mOrdering;
     private final View[] mSources;
 
@@ -41,7 +42,7 @@ class UnionView implements View {
     */
     private int mAllowCursors;
 
-    UnionView(View[] sources) {
+    UnionView(Combiner combiner, View[] sources) {
         // Determining the ordering also validates that no inputs are null.
         Ordering ordering = sources[0].getOrdering();
         for (int i=1; i<sources.length; i++) {
@@ -50,6 +51,7 @@ class UnionView implements View {
             }
         }
 
+        mCombiner = combiner;
         mOrdering = ordering;
         mSources = sources;
     }
@@ -130,12 +132,31 @@ class UnionView implements View {
     }
 
     private byte[] doLoad(Transaction txn, byte[] key) throws IOException {
-        for (View source : mSources) {
-            byte[] value = source.load(txn, key);
-            if (value != null) {
-                return value;
+        if (mCombiner == Combiner.first()) {
+            for (View source : mSources) {
+                byte[] value = source.load(txn, key);
+                if (value != null) {
+                    return value;
+                }
             }
+        } else if (mCombiner == Combiner.second()) {
+            for (int i=mSources.length; --i>=0; ) {
+                byte[] value = mSources[i].load(txn, key);
+                if (value != null) {
+                    return value;
+                }
+            }
+        } else {
+            byte[] combined = null;
+            for (View source : mSources) {
+                byte[] value = source.load(txn, key);
+                if (value != null) {
+                    combined = combined == null ? value : mCombiner.combine(key, combined, value);
+                }
+            }
+            return combined;
         }
+
         return null;
     }
 
@@ -366,6 +387,8 @@ class UnionView implements View {
     public boolean update(Transaction txn, byte[] key, byte[] oldValue, byte[] newValue)
         throws IOException
     {
+        // FIXME: use combiner for oldValue; special case for first() and second()
+
         txn = enterTransaction(txn);
         try {
             // See notes in store method.
@@ -527,7 +550,7 @@ class UnionView implements View {
         for (int i=0; i<sources.length; i++) {
             sources[i] = op.apply(sources[i]);
         }
-        return new UnionView(sources);
+        return new UnionView(mCombiner, sources);
     }
 
     @Override
@@ -561,14 +584,14 @@ class UnionView implements View {
     }
 
     @Override
-    public View viewUnion(View... others) {
+    public View viewUnion(Combiner combiner, View... others) {
         if (others.length == 0) {
             return this;
         }
         View[] combined = new View[mSources.length + others.length];
         System.arraycopy(mSources, 0, combined, 0, mSources.length);
         System.arraycopy(others, 0, combined, mSources.length, others.length);
-        return new UnionView(combined);
+        return new UnionView(combiner, combined);
     }
 
     @Override
@@ -587,7 +610,7 @@ class UnionView implements View {
                 while (true) {
                     sources[i] = source.viewUnmodifiable();
                     if (++i >= sources.length) {
-                        return new UnionView(sources);
+                        return new UnionView(mCombiner, sources);
                     }
                     source = sources[i];
                 }
