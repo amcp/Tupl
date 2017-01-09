@@ -135,19 +135,26 @@
 </tr>
 <tr class="altColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
+<td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewDifference-org.cojen.tupl.View...-">viewDifference</a></span>(<a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
+<div class="block">Returns a view consisting of entries that exist this view but not in any of the others
+ that are given.</div>
+</td>
+</tr>
+<tr class="rowColor">
+<td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewGe-byte:A-">viewGe</a></span>(byte[]&nbsp;key)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys are greater than or
  equal to the given key.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewGt-byte:A-">viewGt</a></span>(byte[]&nbsp;key)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys are greater than the
  given key.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewIntersection-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">viewIntersection</a></span>(<a href="../../../../org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a>&nbsp;combiner,
                 <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
@@ -155,48 +162,48 @@
  given.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewLe-byte:A-">viewLe</a></span>(byte[]&nbsp;key)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys are less than or
  equal to the given key.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewLt-byte:A-">viewLt</a></span>(byte[]&nbsp;key)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys are less than the
  given key.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewPrefix-byte:A-int-">viewPrefix</a></span>(byte[]&nbsp;prefix,
           int&nbsp;trim)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys start with the given prefix.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewReverse--">viewReverse</a></span>()</code>
 <div class="block">Returns a view, backed by this one, whose natural order is reversed.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewTransformed-org.cojen.tupl.Transformer-">viewTransformed</a></span>(<a href="../../../../org/cojen/tupl/Transformer.html" title="interface in org.cojen.tupl">Transformer</a>&nbsp;transformer)</code>
 <div class="block">Returns a sub-view, backed by this one, whose entries have been filtered out and
  transformed.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewUnion-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">viewUnion</a></span>(<a href="../../../../org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a>&nbsp;combiner,
          <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
 <div class="block">Returns a view which combines the entries of this view, with the others that are given.</div>
 </td>
 </tr>
-<tr class="rowColor">
+<tr class="altColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewUnmodifiable--">viewUnmodifiable</a></span>()</code>
 <div class="block">Returns a view, backed by this one, whose entries cannot be modified.</div>
@@ -222,13 +229,20 @@
 </tr>
 <tr class="rowColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
+<td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewDifference-org.cojen.tupl.View...-">viewDifference</a></span>(<a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
+<div class="block">Returns a view consisting of entries that exist this view but not in any of the others
+ that are given.</div>
+</td>
+</tr>
+<tr class="altColor">
+<td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewIntersection-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">viewIntersection</a></span>(<a href="../../../../org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a>&nbsp;combiner,
                 <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
 <div class="block">Returns a view consisting of entries that exist this view and all the others that are
  given.</div>
 </td>
 </tr>
-<tr class="altColor">
+<tr class="rowColor">
 <td class="colFirst"><code>default <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><span class="typeNameLabel">View.</span><code><span class="memberNameLink"><a href="../../../../org/cojen/tupl/View.html#viewUnion-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">viewUnion</a></span>(<a href="../../../../org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a>&nbsp;combiner,
          <a href="../../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>

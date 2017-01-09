@@ -18,7 +18,7 @@
     catch(err) {
     }
 //-->
-var methods = {"i0":18,"i1":18,"i2":18,"i3":18,"i4":18,"i5":18,"i6":6,"i7":18,"i8":6,"i9":18,"i10":6,"i11":6,"i12":6,"i13":6,"i14":6,"i15":18,"i16":18,"i17":18,"i18":18,"i19":18,"i20":18,"i21":18,"i22":18,"i23":18,"i24":18,"i25":18,"i26":18,"i27":18,"i28":18,"i29":18,"i30":18,"i31":18,"i32":18,"i33":18,"i34":18,"i35":18,"i36":18};
+var methods = {"i0":18,"i1":18,"i2":18,"i3":18,"i4":18,"i5":18,"i6":6,"i7":18,"i8":6,"i9":18,"i10":6,"i11":6,"i12":6,"i13":6,"i14":6,"i15":18,"i16":18,"i17":18,"i18":18,"i19":18,"i20":18,"i21":18,"i22":18,"i23":18,"i24":18,"i25":18,"i26":18,"i27":18,"i28":18,"i29":18,"i30":18,"i31":18,"i32":18,"i33":18,"i34":18,"i35":18,"i36":18,"i37":18};
 var tabs = {65535:["t0","All Methods"],2:["t2","Instance Methods"],4:["t3","Abstract Methods"],16:["t5","Default Methods"]};
 var altColor = "altColor";
 var rowColor = "rowColor";
@@ -325,19 +325,26 @@ var activeTableTab = "activeTableTab";
 </tr>
 <tr id="i27" class="rowColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
+<td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewDifference-org.cojen.tupl.View...-">viewDifference</a></span>(<a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
+<div class="block">Returns a view consisting of entries that exist this view but not in any of the others
+ that are given.</div>
+</td>
+</tr>
+<tr id="i28" class="altColor">
+<td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewGe-byte:A-">viewGe</a></span>(byte[]&nbsp;key)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys are greater than or
  equal to the given key.</div>
 </td>
 </tr>
-<tr id="i28" class="altColor">
+<tr id="i29" class="rowColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewGt-byte:A-">viewGt</a></span>(byte[]&nbsp;key)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys are greater than the
  given key.</div>
 </td>
 </tr>
-<tr id="i29" class="rowColor">
+<tr id="i30" class="altColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewIntersection-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">viewIntersection</a></span>(<a href="../../../org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a>&nbsp;combiner,
                 <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
@@ -345,48 +352,48 @@ var activeTableTab = "activeTableTab";
  given.</div>
 </td>
 </tr>
-<tr id="i30" class="altColor">
+<tr id="i31" class="rowColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewLe-byte:A-">viewLe</a></span>(byte[]&nbsp;key)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys are less than or
  equal to the given key.</div>
 </td>
 </tr>
-<tr id="i31" class="rowColor">
+<tr id="i32" class="altColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewLt-byte:A-">viewLt</a></span>(byte[]&nbsp;key)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys are less than the
  given key.</div>
 </td>
 </tr>
-<tr id="i32" class="altColor">
+<tr id="i33" class="rowColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewPrefix-byte:A-int-">viewPrefix</a></span>(byte[]&nbsp;prefix,
           int&nbsp;trim)</code>
 <div class="block">Returns a sub-view, backed by this one, whose keys start with the given prefix.</div>
 </td>
 </tr>
-<tr id="i33" class="rowColor">
+<tr id="i34" class="altColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewReverse--">viewReverse</a></span>()</code>
 <div class="block">Returns a view, backed by this one, whose natural order is reversed.</div>
 </td>
 </tr>
-<tr id="i34" class="altColor">
+<tr id="i35" class="rowColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewTransformed-org.cojen.tupl.Transformer-">viewTransformed</a></span>(<a href="../../../org/cojen/tupl/Transformer.html" title="interface in org.cojen.tupl">Transformer</a>&nbsp;transformer)</code>
 <div class="block">Returns a sub-view, backed by this one, whose entries have been filtered out and
  transformed.</div>
 </td>
 </tr>
-<tr id="i35" class="rowColor">
+<tr id="i36" class="altColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewUnion-org.cojen.tupl.Combiner-org.cojen.tupl.View...-">viewUnion</a></span>(<a href="../../../org/cojen/tupl/Combiner.html" title="interface in org.cojen.tupl">Combiner</a>&nbsp;combiner,
          <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</code>
 <div class="block">Returns a view which combines the entries of this view, with the others that are given.</div>
 </td>
 </tr>
-<tr id="i36" class="altColor">
+<tr id="i37" class="rowColor">
 <td class="colFirst"><code>default <a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a></code></td>
 <td class="colLast"><code><span class="memberNameLink"><a href="../../../org/cojen/tupl/View.html#viewUnmodifiable--">viewUnmodifiable</a></span>()</code>
 <div class="block">Returns a view, backed by this one, whose entries cannot be modified.</div>
@@ -1199,6 +1206,30 @@ var activeTableTab = "activeTableTab";
 <dt><span class="paramLabel">Parameters:</span></dt>
 <dd><code>combiner</code> - combines values together; pass null to always favor the first</dd>
 </dl>
+</li>
+</ul>
+<a name="viewDifference-org.cojen.tupl.View...-">
+<!--   -->
+</a>
+<ul class="blockList">
+<li class="blockList">
+<h4>viewDifference</h4>
+<pre>default&nbsp;<a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>&nbsp;viewDifference(<a href="../../../org/cojen/tupl/View.html" title="interface in org.cojen.tupl">View</a>...&nbsp;others)</pre>
+<div class="block">Returns a view consisting of entries that exist this view but not in any of the others
+ that are given. If the set of views in the difference don't follow a consistent
+ ordering, then entry selection doesn't work correctly. The actual behavior is undefined.
+
+ <p>Storing entries in the difference is permitted, but final entries are only stored in
+ the first view (this view). As a side-effect of any successful store operation, the
+ corresponding entries in the other views are always deleted. The order in which the
+ underlying operations are performed permits a difference to be composed of views which
+ can map to the same underlying source index. The entire operation is transactional, and
+ so stores to differences don't support the <a href="../../../org/cojen/tupl/Transaction.html#BOGUS"><code>"bogus"</code></a> transaction.
+
+ <p>Differences don't support cursors. For this reason, differences are typically applied
+ last when building a view processing pipeline. Also, avoiding creating differences which
+ are composed of other differences. Such a pipeline might be less efficient than one
+ composed with a single difference step.</div>
 </li>
 </ul>
 <a name="viewReverse--">
